@@ -1,0 +1,206 @@
+{% extends 'crypto_sentiment/base.html' %}
+{% load static %}
+{% load sentiment_tags %}
+
+{% block title %}Analyse de Sentiment - Crypto{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    .sentiment-card {
+        transition: transform 0.3s ease;
+    }
+    .sentiment-card:hover {
+        transform: translateY(-5px);
+    }
+    .sentiment-positive {
+        color: #28a745;
+    }
+    .sentiment-neutral {
+        color: #ffc107;
+    }
+    .sentiment-negative {
+        color: #dc3545;
+    }
+    .scrape-btn {
+        background: linear-gradient(45deg, #2196F3, #00BCD4);
+        border: none;
+        box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+    }
+    .scrape-btn:hover {
+        background: linear-gradient(45deg, #1976D2, #0097A7);
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Messages -->
+    {% if messages %}
+    <div class="row mb-4">
+        <div class="col-md-12">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Bouton de Scraping -->
+    <div class="row mb-4">
+        <div class="col-md-12 text-center">
+            <form method="post" action="{% url 'crypto_sentiment:trigger_scraping' %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn scrape-btn text-white btn-lg">
+                    <i class="fas fa-sync-alt me-2"></i>
+                    Mettre à jour les sentiments
+                    <i class="fas fa-heart ms-2"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Statistiques Globales -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-chart-line me-2"></i>Statistiques Globales</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card bg-light sentiment-card">
+                                <div class="card-body text-center">
+                                    <h5><i class="fas fa-comments me-2"></i>Total des Posts</h5>
+                                    <h3>{{ total_posts }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        {% for sentiment_type, display_name in sentiment_types %}
+                        <div class="col-md-3">
+                            <div class="card bg-light sentiment-card">
+                                <div class="card-body text-center">
+                                    <h5>
+                                        {% if sentiment_type == 'popularity' %}
+                                            <i class="fas fa-heart me-2"></i>
+                                        {% elif sentiment_type == 'utility' %}
+                                            <i class="fas fa-tools me-2"></i>
+                                        {% elif sentiment_type == 'investment' %}
+                                            <i class="fas fa-chart-line me-2"></i>
+                                        {% elif sentiment_type == 'stability' %}
+                                            <i class="fas fa-shield-alt me-2"></i>
+                                        {% elif sentiment_type == 'innovation' %}
+                                            <i class="fas fa-lightbulb me-2"></i>
+                                        {% endif %}
+                                        {{ display_name }}
+                                    </h5>
+                                    <h3 class="text-{{ sentiment_stats|get_item:sentiment_type|get_sentiment_class }}">
+                                        {{ sentiment_stats|get_item:sentiment_type }}%
+                                    </h3>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des Cryptomonnaies -->
+    <div class="row">
+        {% for crypto in cryptocurrencies %}
+        <div class="col-md-6 mb-4">
+            <div class="card sentiment-card">
+                <div class="card-header">
+                    <h4>
+                        <i class="fas fa-coins me-2"></i>
+                        {{ crypto.name }} ({{ crypto.symbol }})
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for sentiment_type, display_name in sentiment_types %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <h6>
+                                        {% if sentiment_type == 'popularity' %}
+                                            <i class="fas fa-heart me-2"></i>
+                                        {% elif sentiment_type == 'utility' %}
+                                            <i class="fas fa-tools me-2"></i>
+                                        {% elif sentiment_type == 'investment' %}
+                                            <i class="fas fa-chart-line me-2"></i>
+                                        {% elif sentiment_type == 'stability' %}
+                                            <i class="fas fa-shield-alt me-2"></i>
+                                        {% elif sentiment_type == 'innovation' %}
+                                            <i class="fas fa-lightbulb me-2"></i>
+                                        {% endif %}
+                                        {{ display_name }}
+                                    </h6>
+                                    <span class="badge bg-{{ crypto.sentiments|get_item:sentiment_type|get_item:'class' }}">
+                                        {% if crypto.sentiments|get_item:sentiment_type|get_item:'score' %}
+                                            {% if crypto.sentiments|get_item:sentiment_type|get_item:'score' >= 60 %}
+                                                <i class="fas fa-thumbs-up me-1"></i>
+                                            {% elif crypto.sentiments|get_item:sentiment_type|get_item:'score' <= 40 %}
+                                                <i class="fas fa-thumbs-down me-1"></i>
+                                            {% else %}
+                                                <i class="fas fa-meh me-1"></i>
+                                            {% endif %}
+                                            {{ crypto.sentiments|get_item:sentiment_type|get_item:'score' }}%
+                                        {% else %}
+                                            <span class="text-muted">
+                                                <i class="fas fa-question-circle me-1"></i>
+                                                Non disponible
+                                            </span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Configuration du graphique
+    const ctx = document.getElementById('sentimentChart').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ dates|safe }},
+            datasets: [
+                {% for crypto in cryptocurrencies %}
+                {
+                    label: '{{ crypto.symbol }}',
+                    data: {{ crypto.sentiment_data|safe }},
+                    borderColor: '{{ crypto.chart_color }}',
+                    tension: 0.1
+                },
+                {% endfor %}
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+</script>
+{% endblock %} 

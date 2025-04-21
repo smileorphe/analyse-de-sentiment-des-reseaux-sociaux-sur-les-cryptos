@@ -1,0 +1,274 @@
+{% extends 'crypto_sentiment/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Crypto Sentiment{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        transition: transform 0.2s;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin-bottom: 1rem;
+    }
+    .chart-card {
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête avec bouton de mise à jour -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1>Dashboard Crypto Sentiment</h1>
+                <form method="post" action="{% url 'crypto_sentiment:trigger_scraping' %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-sync-alt"></i> Mettre à jour les données
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cartes de statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total des Posts</h5>
+                    <h2 class="card-text">{{ total_posts }}</h2>
+                    <p class="card-text"><small>Dernières 24h</small></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Posts Positifs</h5>
+                    <h2 class="card-text">{{ positive_posts }}</h2>
+                    <p class="card-text"><small>{{ positive_percentage }}%</small></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Posts Neutres</h5>
+                    <h2 class="card-text">{{ neutral_posts }}</h2>
+                    <p class="card-text"><small>{{ neutral_percentage }}%</small></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Posts Négatifs</h5>
+                    <h2 class="card-text">{{ negative_posts }}</h2>
+                    <p class="card-text"><small>{{ negative_percentage }}%</small></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphiques principaux -->
+    <div class="row mb-4">
+        <!-- Évolution du sentiment -->
+        <div class="col-md-8">
+            <div class="card chart-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Évolution du Sentiment</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="sentimentEvolutionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Répartition par type de sentiment -->
+        <div class="col-md-4">
+            <div class="card chart-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Répartition par Type</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="sentimentTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphiques détaillés par type de sentiment -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Analyse Détaillée par Type de Sentiment</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for sentiment_type, label in sentiment_type_labels %}
+                        <div class="col-md-6 mb-4">
+                            <div class="card chart-card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">{{ label }}</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container">
+                                        <canvas id="sentimentDetailChart{{ forloop.counter }}"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tableau des cryptomonnaies -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Analyse par Cryptomonnaie</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Cryptomonnaie</th>
+                                    <th>Popularité</th>
+                                    <th>Utilité</th>
+                                    <th>Potentiel d'investissement</th>
+                                    <th>Stabilité</th>
+                                    <th>Innovation</th>
+                                    <th>Total Posts</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for crypto in cryptocurrencies %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ crypto.symbol }}</strong>
+                                        <br>
+                                        <small>{{ crypto.name }}</small>
+                                    </td>
+                                    {% for sentiment_type in sentiment_types %}
+                                    <td>
+                                        <span class="badge bg-{{ crypto.sentiments|get_item:sentiment_type|get_item:'class' }}">
+                                            {{ crypto.sentiments|get_item:sentiment_type|get_item:'score'|default:"N/A" }}
+                                        </span>
+                                    </td>
+                                    {% endfor %}
+                                    <td>{{ crypto.post_count }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Graphique d'évolution du sentiment
+    const sentimentEvolutionCtx = document.getElementById('sentimentEvolutionChart').getContext('2d');
+    new Chart(sentimentEvolutionCtx, {
+        type: 'line',
+        data: {
+            labels: {{ dates|safe }},
+            datasets: [
+                {
+                    label: 'Bitcoin (BTC)',
+                    data: {{ btc_data|safe }},
+                    borderColor: '#f7931a',
+                    tension: 0.1
+                },
+                {
+                    label: 'Ethereum (ETH)',
+                    data: {{ eth_data|safe }},
+                    borderColor: '#627eea',
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+
+    // Graphique de répartition par type
+    const sentimentTypeCtx = document.getElementById('sentimentTypeChart').getContext('2d');
+    new Chart(sentimentTypeCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ sentiment_type_labels|safe }},
+            datasets: [{
+                data: {{ sentiment_type_data|safe }},
+                backgroundColor: [
+                    '#28a745',
+                    '#17a2b8',
+                    '#ffc107',
+                    '#dc3545',
+                    '#6c757d'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Graphiques détaillés par type de sentiment
+    {% for sentiment_type, label in sentiment_type_labels %}
+    const sentimentDetailCtx{{ forloop.counter }} = document.getElementById('sentimentDetailChart{{ forloop.counter }}').getContext('2d');
+    new Chart(sentimentDetailCtx{{ forloop.counter }}, {
+        type: 'bar',
+        data: {
+            labels: {{ crypto_symbols|safe }},
+            datasets: [{
+                label: '{{ label }}',
+                data: {{ sentiment_type_data|get_item:forloop.counter0|safe }},
+                backgroundColor: '#{{ sentiment_type_colors|get_item:forloop.counter0 }}'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+    {% endfor %}
+</script>
+{% endblock %} 

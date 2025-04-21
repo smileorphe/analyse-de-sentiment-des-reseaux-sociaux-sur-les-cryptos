@@ -1,0 +1,101 @@
+{% extends 'crypto_sentiment/base.html' %}
+{% load static %}
+{% load crypto_tags %}
+
+{% block title %}Avis sur les Cryptomonnaies{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2>Avis sur les Cryptomonnaies</h2>
+            <form method="post" action="{% url 'crypto_sentiment:trigger_scraping' %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-sync-alt"></i> Mettre à jour les données
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Filtres -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="crypto" class="form-label">Cryptomonnaie</label>
+                        <select name="crypto" id="crypto" class="form-select">
+                            <option value="">Toutes</option>
+                            {% for crypto in cryptocurrencies %}
+                            <option value="{{ crypto.symbol }}" {% if selected_crypto == crypto.symbol %}selected{% endif %}>
+                                {{ crypto.name }} ({{ crypto.symbol }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="platform" class="form-label">Plateforme</label>
+                        <select name="platform" id="platform" class="form-select">
+                            <option value="">Toutes</option>
+                            <option value="reddit" {% if selected_platform == 'reddit' %}selected{% endif %}>Reddit</option>
+                            <option value="4chan" {% if selected_platform == '4chan' %}selected{% endif %}>4chan</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">Filtrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Liste des Posts -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Cryptomonnaie</th>
+                                <th>Plateforme</th>
+                                <th>Contenu</th>
+                                <th>Sentiment</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for post in posts %}
+                            <tr>
+                                <td>{{ post.created_at|date:"d/m/Y H:i" }}</td>
+                                <td>{{ post.cryptocurrency.symbol }}</td>
+                                <td>
+                                    <span class="badge {% if post.platform == 'reddit' %}bg-primary{% else %}bg-info{% endif %}">
+                                        {{ post.platform|title }}
+                                    </span>
+                                </td>
+                                <td>{{ post.content|truncatechars:200 }}</td>
+                                <td>
+                                    <span class="badge bg-{{ post.sentiment_score|get_sentiment_class }}">
+                                        {{ post.sentiment_score|floatformat:1 }}%
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center">Aucun post trouvé</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

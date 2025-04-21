@@ -1,0 +1,22 @@
+2025-04-16 16:03:50,263 - crypto_sentiment - INFO - Démarrage du scraping des réseaux sociaux...
+2025-04-16 16:03:50,271 - crypto_sentiment.scrapers - INFO - Début du scraping pour BTC
+2025-04-16 16:03:51,334 - crypto_sentiment.scrapers - ERROR - Erreur lors du scraping Reddit pour BTC: Cannot resolve keyword 'source_id' into field. Choices are: collected_at, content, created_at, cryptocurrency, cryptocurrency_id, id, platform, post_id, sentiment_score
+2025-04-16 16:03:58,446 - crypto_sentiment.scrapers - INFO - Fin du scraping pour BTC
+2025-04-16 16:03:58,446 - crypto_sentiment.scrapers - INFO - Début du scraping pour ETH
+2025-04-16 16:03:59,347 - crypto_sentiment.scrapers - ERROR - Erreur lors du scraping Reddit pour ETH: Cannot resolve keyword 'source_id' into field. Choices are: collected_at, content, created_at, cryptocurrency, cryptocurrency_id, id, platform, post_id, sentiment_score
+2025-04-16 16:04:04,578 - crypto_sentiment.scrapers - INFO - Fin du scraping pour ETH
+2025-04-16 16:04:04,578 - crypto_sentiment - INFO - Scraping terminé avec succès
+2025-04-16 16:04:04,578 - crypto_sentiment - INFO - Démarrage de l'analyse des sentiments...
+2025-04-16 16:04:04,598 - crypto_sentiment.tasks - INFO - Analyse des sentiments terminée pour 0 posts
+2025-04-16 16:04:04,598 - crypto_sentiment - INFO - Analyse des sentiments terminée
+2025-04-16 16:05:43,959 - crypto_sentiment - INFO - Démarrage du scraping des réseaux sociaux...
+2025-04-16 16:05:43,961 - crypto_sentiment.scrapers - INFO - Début du scraping pour BTC
+2025-04-16 16:05:45,188 - crypto_sentiment.scrapers - ERROR - Erreur lors du scraping Reddit pour BTC: Cannot resolve keyword 'source_id' into field. Choices are: collected_at, content, created_at, cryptocurrency, cryptocurrency_id, id, platform, post_id, sentiment_score
+2025-04-16 16:05:50,629 - crypto_sentiment.scrapers - INFO - Fin du scraping pour BTC
+2025-04-16 16:05:50,629 - crypto_sentiment.scrapers - INFO - Début du scraping pour ETH
+2025-04-16 16:05:51,865 - crypto_sentiment.scrapers - ERROR - Erreur lors du scraping Reddit pour ETH: Cannot resolve keyword 'source_id' into field. Choices are: collected_at, content, created_at, cryptocurrency, cryptocurrency_id, id, platform, post_id, sentiment_score
+2025-04-16 16:05:59,101 - crypto_sentiment.scrapers - INFO - Fin du scraping pour ETH
+2025-04-16 16:05:59,101 - crypto_sentiment - INFO - Scraping terminé avec succès
+2025-04-16 16:05:59,101 - crypto_sentiment - INFO - Démarrage de l'analyse des sentiments...
+2025-04-16 16:05:59,131 - crypto_sentiment.tasks - INFO - Analyse des sentiments terminée pour 0 posts
+2025-04-16 16:05:59,132 - crypto_sentiment - INFO - Analyse des sentiments terminée
