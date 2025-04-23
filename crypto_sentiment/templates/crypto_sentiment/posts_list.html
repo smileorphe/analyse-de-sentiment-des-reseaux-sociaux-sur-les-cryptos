@@ -41,7 +41,8 @@
                         <select name="platform" id="platform" class="form-select">
                             <option value="">Toutes</option>
                             <option value="reddit" {% if selected_platform == 'reddit' %}selected{% endif %}>Reddit</option>
-                            <option value="4chan" {% if selected_platform == '4chan' %}selected{% endif %}>4chan</option>
+                            <option value="cryptofr" {% if selected_platform == 'cryptofr' %}selected{% endif %}>CryptoFR</option>
+                            <option value="jvcom" {% if selected_platform == 'jvcom' %}selected{% endif %}>JV.com</option>
                         </select>
                     </div>
                     <div class="col-md-4 d-flex align-items-end">
@@ -75,7 +76,7 @@
                                 <td>{{ post.created_at|date:"d/m/Y H:i" }}</td>
                                 <td>{{ post.cryptocurrency.symbol }}</td>
                                 <td>
-                                    <span class="badge {% if post.platform == 'reddit' %}bg-primary{% else %}bg-info{% endif %}">
+                                    <span class="badge {% if post.platform == 'reddit' %}bg-primary{% elif post.platform == 'cryptofr' %}bg-success{% elif post.platform == 'jvcom' %}bg-info{% endif %}">
                                         {{ post.platform|title }}
                                     </span>
                                 </td>

@@ -20,3 +20,48 @@
 2025-04-16 16:05:59,101 - crypto_sentiment - INFO - Démarrage de l'analyse des sentiments...
 2025-04-16 16:05:59,131 - crypto_sentiment.tasks - INFO - Analyse des sentiments terminée pour 0 posts
 2025-04-16 16:05:59,132 - crypto_sentiment - INFO - Analyse des sentiments terminée
+2025-04-23 11:19:28,609 - crypto_sentiment - INFO - Démarrage du scraping des réseaux sociaux...
+2025-04-23 11:19:28,649 - crypto_sentiment.scrapers - INFO - Début du scraping pour BTC
+2025-04-23 11:19:37,192 - crypto_sentiment.scrapers - INFO - Fin du scraping pour BTC
+2025-04-23 11:19:37,193 - crypto_sentiment.scrapers - INFO - Début du scraping pour ETH
+2025-04-23 11:19:46,397 - crypto_sentiment.scrapers - INFO - Fin du scraping pour ETH
+2025-04-23 11:19:46,397 - crypto_sentiment.scrapers - INFO - Début du scraping pour ADA
+2025-04-23 11:19:56,066 - crypto_sentiment.scrapers - INFO - Fin du scraping pour ADA
+2025-04-23 11:19:56,068 - crypto_sentiment.scrapers - INFO - Début du scraping pour SOL
+2025-04-23 11:20:02,192 - crypto_sentiment.scrapers - INFO - Fin du scraping pour SOL
+2025-04-23 11:20:02,192 - crypto_sentiment.scrapers - INFO - Début du scraping pour DOT
+2025-04-23 11:20:08,824 - crypto_sentiment.scrapers - INFO - Fin du scraping pour DOT
+2025-04-23 11:20:08,824 - crypto_sentiment - INFO - Scraping terminé avec succès
+2025-04-23 11:20:08,827 - crypto_sentiment - INFO - Démarrage de l'analyse des sentiments...
+2025-04-23 11:20:08,887 - crypto_sentiment.tasks - INFO - Analyse des sentiments terminée pour 0 posts
+2025-04-23 11:20:08,887 - crypto_sentiment - INFO - Analyse des sentiments terminée
+2025-04-23 11:52:47,952 - crypto_sentiment - INFO - Démarrage du scraping des réseaux sociaux...
+2025-04-23 11:52:47,978 - crypto_sentiment.scrapers - INFO - Début du scraping pour BTC
+2025-04-23 11:53:32,591 - crypto_sentiment.scrapers - INFO - Fin du scraping pour BTC
+2025-04-23 11:53:32,592 - crypto_sentiment.scrapers - INFO - Début du scraping pour ETH
+2025-04-23 11:54:16,381 - crypto_sentiment.scrapers - INFO - Fin du scraping pour ETH
+2025-04-23 11:54:16,383 - crypto_sentiment.scrapers - INFO - Début du scraping pour ADA
+2025-04-23 11:55:00,768 - crypto_sentiment.scrapers - INFO - Fin du scraping pour ADA
+2025-04-23 11:55:00,768 - crypto_sentiment.scrapers - INFO - Début du scraping pour SOL
+2025-04-23 11:55:44,217 - crypto_sentiment.scrapers - INFO - Fin du scraping pour SOL
+2025-04-23 11:55:44,218 - crypto_sentiment.scrapers - INFO - Début du scraping pour DOT
+2025-04-23 11:56:27,675 - crypto_sentiment.scrapers - INFO - Fin du scraping pour DOT
+2025-04-23 11:56:27,675 - crypto_sentiment - INFO - Scraping terminé avec succès
+2025-04-23 11:56:27,675 - crypto_sentiment - INFO - Démarrage de l'analyse des sentiments...
+2025-04-23 11:56:27,722 - crypto_sentiment.tasks - INFO - Analyse des sentiments terminée pour 0 posts
+2025-04-23 11:56:27,722 - crypto_sentiment - INFO - Analyse des sentiments terminée
+2025-04-23 12:23:58,218 - crypto_sentiment - INFO - Démarrage du scraping des réseaux sociaux...
+2025-04-23 12:23:58,238 - crypto_sentiment.scrapers - INFO - Début du scraping pour BTC
+2025-04-23 12:24:00,427 - crypto_sentiment.scrapers - INFO - Fin du scraping pour BTC
+2025-04-23 12:24:00,430 - crypto_sentiment.scrapers - INFO - Début du scraping pour ETH
+2025-04-23 12:24:01,204 - crypto_sentiment.scrapers - INFO - Fin du scraping pour ETH
+2025-04-23 12:24:01,206 - crypto_sentiment.scrapers - INFO - Début du scraping pour ADA
+2025-04-23 12:24:02,070 - crypto_sentiment.scrapers - INFO - Fin du scraping pour ADA
+2025-04-23 12:24:02,071 - crypto_sentiment.scrapers - INFO - Début du scraping pour SOL
+2025-04-23 12:24:03,430 - crypto_sentiment.scrapers - INFO - Fin du scraping pour SOL
+2025-04-23 12:24:03,430 - crypto_sentiment.scrapers - INFO - Début du scraping pour DOT
+2025-04-23 12:24:04,522 - crypto_sentiment.scrapers - INFO - Fin du scraping pour DOT
+2025-04-23 12:24:04,524 - crypto_sentiment - INFO - Scraping terminé avec succès
+2025-04-23 12:24:04,527 - crypto_sentiment - INFO - Démarrage de l'analyse des sentiments...
+2025-04-23 12:24:04,581 - crypto_sentiment.tasks - INFO - Analyse des sentiments terminée pour 0 posts
+2025-04-23 12:24:04,583 - crypto_sentiment - INFO - Analyse des sentiments terminée

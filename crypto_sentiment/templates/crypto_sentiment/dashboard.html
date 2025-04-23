@@ -1,5 +1,6 @@
 {% extends 'crypto_sentiment/base.html' %}
 {% load static %}
+{% load custom_filters %}
 
 {% block title %}Dashboard - Crypto Sentiment{% endblock %}
 
@@ -24,17 +25,37 @@
 
 {% block content %}
 <div class="container-fluid">
-    <!-- En-tête avec bouton de mise à jour -->
+    <!-- En-tête avec filtres et bouton de mise à jour -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <h1>Dashboard Crypto Sentiment</h1>
-                <form method="post" action="{% url 'crypto_sentiment:trigger_scraping' %}" class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-sync-alt"></i> Mettre à jour les données
-                    </button>
-                </form>
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <h1 class="mb-3 mb-md-0">Dashboard Crypto Sentiment</h1>
+                <div class="d-flex gap-3 align-items-center flex-wrap">
+                    <!-- Filtres -->
+                    <form method="get" class="d-flex gap-3">
+                        <select name="period" class="form-select" onchange="this.form.submit()">
+                            {% for value, label in period_options %}
+                            <option value="{{ value }}" {% if value == selected_period %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <select name="source" class="form-select" onchange="this.form.submit()">
+                            {% for value, label in source_options %}
+                            <option value="{{ value }}" {% if value == selected_source %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                    <!-- Bouton de mise à jour -->
+                    <form method="post" action="{% url 'crypto_sentiment:trigger_scraping' %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-sync-alt"></i> Mettre à jour les données
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -53,86 +74,72 @@
         <div class="col-md-3">
             <div class="card stat-card bg-success text-white">
                 <div class="card-body">
-                    <h5 class="card-title">Posts Positifs</h5>
-                    <h2 class="card-text">{{ positive_posts }}</h2>
-                    <p class="card-text"><small>{{ positive_percentage }}%</small></p>
+                    <h5 class="card-title">Sentiment Positif</h5>
+                    <h2 class="card-text">{{ positive_percentage }}%</h2>
+                    <p class="card-text"><small>Score ≥ 60</small></p>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card stat-card bg-warning text-white">
+            <div class="card stat-card bg-warning text-dark">
                 <div class="card-body">
-                    <h5 class="card-title">Posts Neutres</h5>
-                    <h2 class="card-text">{{ neutral_posts }}</h2>
-                    <p class="card-text"><small>{{ neutral_percentage }}%</small></p>
+                    <h5 class="card-title">Sentiment Neutre</h5>
+                    <h2 class="card-text">{{ neutral_percentage }}%</h2>
+                    <p class="card-text"><small>Score 40-60</small></p>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card stat-card bg-danger text-white">
                 <div class="card-body">
-                    <h5 class="card-title">Posts Négatifs</h5>
-                    <h2 class="card-text">{{ negative_posts }}</h2>
-                    <p class="card-text"><small>{{ negative_percentage }}%</small></p>
+                    <h5 class="card-title">Sentiment Négatif</h5>
+                    <h2 class="card-text">{{ negative_percentage }}%</h2>
+                    <p class="card-text"><small>Score < 40</small></p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Graphiques principaux -->
+    <!-- Graphiques -->
     <div class="row mb-4">
-        <!-- Évolution du sentiment -->
-        <div class="col-md-8">
+        <!-- Graphique d'évolution -->
+        <div class="col-md-12">
             <div class="card chart-card">
                 <div class="card-header">
                     <h5 class="card-title mb-0">Évolution du Sentiment</h5>
                 </div>
                 <div class="card-body">
                     <div class="chart-container">
-                        <canvas id="sentimentEvolutionChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Répartition par type de sentiment -->
-        <div class="col-md-4">
-            <div class="card chart-card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Répartition par Type</h5>
-                </div>
-                <div class="card-body">
-                    <div class="chart-container">
-                        <canvas id="sentimentTypeChart"></canvas>
+                        <canvas id="evolutionChart"></canvas>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Graphiques détaillés par type de sentiment -->
+    <!-- Section de la carte thermique -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">Analyse Détaillée par Type de Sentiment</h5>
+                    <h5 class="card-title mb-0">Corrélations des Sentiments</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        {% for sentiment_type, label in sentiment_type_labels %}
-                        <div class="col-md-6 mb-4">
-                            <div class="card chart-card">
-                                <div class="card-header">
-                                    <h5 class="card-title mb-0">{{ label }}</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="chart-container">
-                                        <canvas id="sentimentDetailChart{{ forloop.counter }}"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
+                    <div id="heatmap" style="height: 500px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section du nuage de mots -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Nuage de Mots-clés</h5>
+                </div>
+                <div class="card-body">
+                    <div id="word-cloud" style="height: 400px;"></div>
                 </div>
             </div>
         </div>
@@ -147,16 +154,14 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table">
                             <thead>
                                 <tr>
                                     <th>Cryptomonnaie</th>
-                                    <th>Popularité</th>
-                                    <th>Utilité</th>
-                                    <th>Potentiel d'investissement</th>
-                                    <th>Stabilité</th>
-                                    <th>Innovation</th>
-                                    <th>Total Posts</th>
+                                    {% for type, label in sentiment_types %}
+                                    <th>{{ label }}</th>
+                                    {% endfor %}
+                                    <th>Posts</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -167,10 +172,10 @@
                                         <br>
                                         <small>{{ crypto.name }}</small>
                                     </td>
-                                    {% for sentiment_type in sentiment_types %}
+                                    {% for type, label in sentiment_types %}
                                     <td>
-                                        <span class="badge bg-{{ crypto.sentiments|get_item:sentiment_type|get_item:'class' }}">
-                                            {{ crypto.sentiments|get_item:sentiment_type|get_item:'score'|default:"N/A" }}
+                                        <span class="badge bg-{{ crypto.sentiments|get_item:type|get_item:'class' }}">
+                                            {{ crypto.sentiments|get_item:type|get_item:'score'|default:"N/A" }}
                                         </span>
                                     </td>
                                     {% endfor %}
@@ -188,87 +193,249 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/jasondavies/d3-cloud/build/d3.layout.cloud.js"></script>
 <script>
-    // Graphique d'évolution du sentiment
-    const sentimentEvolutionCtx = document.getElementById('sentimentEvolutionChart').getContext('2d');
-    new Chart(sentimentEvolutionCtx, {
+    // Données pour le graphique d'évolution
+    const dates = {{ dates|safe }};
+    const cryptoData = {{ crypto_data|safe }};
+    const cryptoColors = {{ crypto_colors|safe }};
+
+    // Configuration du graphique d'évolution
+    const evolutionCtx = document.getElementById('evolutionChart').getContext('2d');
+    
+    // Créer les datasets pour chaque crypto
+    const datasets = Object.entries(cryptoData).map(([symbol, data]) => ({
+        label: symbol,
+        data: data,
+        borderColor: cryptoColors[symbol] || '#000000',
+        backgroundColor: `${cryptoColors[symbol]}20` || '#00000020',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4
+    }));
+
+    new Chart(evolutionCtx, {
         type: 'line',
         data: {
-            labels: {{ dates|safe }},
-            datasets: [
-                {
-                    label: 'Bitcoin (BTC)',
-                    data: {{ btc_data|safe }},
-                    borderColor: '#f7931a',
-                    tension: 0.1
+            labels: dates,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 10
+                    }
                 },
-                {
-                    label: 'Ethereum (ETH)',
-                    data: {{ eth_data|safe }},
-                    borderColor: '#627eea',
-                    tension: 0.1
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
                 }
             }
         }
     });
 
-    // Graphique de répartition par type
-    const sentimentTypeCtx = document.getElementById('sentimentTypeChart').getContext('2d');
-    new Chart(sentimentTypeCtx, {
-        type: 'doughnut',
-        data: {
-            labels: {{ sentiment_type_labels|safe }},
-            datasets: [{
-                data: {{ sentiment_type_data|safe }},
-                backgroundColor: [
-                    '#28a745',
-                    '#17a2b8',
-                    '#ffc107',
-                    '#dc3545',
-                    '#6c757d'
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false
+    // Création de la carte thermique
+    function createHeatmap() {
+        const correlations = {{ correlations|safe }};
+        const cryptoSymbols = {{ crypto_symbols|safe }};
+        
+        // Préparer les données pour Plotly
+        const data = [];
+        const zValues = [];
+        
+        for (const crypto1 of cryptoSymbols) {
+            const row = [];
+            for (const crypto2 of cryptoSymbols) {
+                row.push(correlations[crypto1][crypto2]);
+            }
+            zValues.push(row);
         }
-    });
-
-    // Graphiques détaillés par type de sentiment
-    {% for sentiment_type, label in sentiment_type_labels %}
-    const sentimentDetailCtx{{ forloop.counter }} = document.getElementById('sentimentDetailChart{{ forloop.counter }}').getContext('2d');
-    new Chart(sentimentDetailCtx{{ forloop.counter }}, {
-        type: 'bar',
-        data: {
-            labels: {{ crypto_symbols|safe }},
-            datasets: [{
-                label: '{{ label }}',
-                data: {{ sentiment_type_data|get_item:forloop.counter0|safe }},
-                backgroundColor: '#{{ sentiment_type_colors|get_item:forloop.counter0 }}'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100
-                }
+        
+        const trace = {
+            z: zValues,
+            x: cryptoSymbols,
+            y: cryptoSymbols,
+            type: 'heatmap',
+            colorscale: [
+                ['0.0', '#d73027'],  // Rouge pour corrélation négative
+                ['0.5', '#f7f7f7'],  // Blanc pour corrélation nulle
+                ['1.0', '#1a9850']   // Vert pour corrélation positive
+            ],
+            zmin: -1,
+            zmax: 1,
+            hoverongaps: false,
+            hovertemplate: 'Corrélation entre %{x} et %{y}: %{z:.2f}<extra></extra>'
+        };
+        
+        const layout = {
+            title: 'Matrice de Corrélation des Sentiments',
+            xaxis: {
+                title: 'Crypto',
+                side: 'bottom'
+            },
+            yaxis: {
+                title: 'Crypto',
+                autorange: 'reversed'
+            },
+            annotations: [],
+            margin: {
+                t: 50,
+                l: 80,
+                r: 50,
+                b: 80
+            }
+        };
+        
+        // Ajouter les valeurs de corrélation comme annotations
+        for (let i = 0; i < cryptoSymbols.length; i++) {
+            for (let j = 0; j < cryptoSymbols.length; j++) {
+                const value = zValues[i][j];
+                layout.annotations.push({
+                    xref: 'x',
+                    yref: 'y',
+                    x: cryptoSymbols[j],
+                    y: cryptoSymbols[i],
+                    text: value.toFixed(2),
+                    font: {
+                        color: Math.abs(value) > 0.5 ? 'white' : 'black'
+                    },
+                    showarrow: false
+                });
             }
         }
+        
+        const config = {
+            responsive: true,
+            displayModeBar: false
+        };
+        
+        Plotly.newPlot('heatmap', [trace], layout, config);
+    }
+    
+    // Création du nuage de mots
+    function createWordCloud() {
+        const wordData = {{ word_data|safe }};
+        const width = document.getElementById('word-cloud').offsetWidth;
+        const height = 400;
+        
+        // Configurer la mise en page du nuage
+        const layout = d3.layout.cloud()
+            .size([width, height])
+            .words(wordData)
+            .padding(5)
+            .rotate(() => 0)  // Pas de rotation pour une meilleure lisibilité
+            .font('Impact')
+            .fontSize(d => Math.sqrt(d.size) * 5)  // Taille proportionnelle à la racine carrée de la fréquence
+            .on('end', draw);
+        
+        layout.start();
+        
+        function draw(words) {
+            // Supprimer l'ancien nuage s'il existe
+            d3.select('#word-cloud').select('svg').remove();
+            
+            // Créer le nouveau nuage
+            const svg = d3.select('#word-cloud')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height)
+                .append('g')
+                .attr('transform', `translate(${width/2},${height/2})`);
+            
+            // Ajouter les mots
+            const wordElements = svg.selectAll('text')
+                .data(words)
+                .enter()
+                .append('text')
+                .style('font-size', d => `${d.size}px`)
+                .style('font-family', 'Impact')
+                .style('fill', d => d.color)
+                .attr('text-anchor', 'middle')
+                .attr('transform', d => `translate(${d.x},${d.y})`)
+                .text(d => d.text)
+                .style('cursor', 'pointer')
+                .on('mouseover', function(event, d) {
+                    // Effet de survol
+                    d3.select(this)
+                        .transition()
+                        .duration(200)
+                        .style('font-size', `${d.size * 1.2}px`);
+                    
+                    // Afficher les infos
+                    showWordInfo(d);
+                })
+                .on('mouseout', function(event, d) {
+                    // Retour à la normale
+                    d3.select(this)
+                        .transition()
+                        .duration(200)
+                        .style('font-size', `${d.size}px`);
+                    
+                    // Cacher les infos
+                    hideWordInfo();
+                });
+        }
+        
+        // Créer un div pour les infos au survol
+        const tooltip = d3.select('body')
+            .append('div')
+            .attr('class', 'word-tooltip')
+            .style('position', 'absolute')
+            .style('visibility', 'hidden')
+            .style('background-color', 'white')
+            .style('padding', '5px')
+            .style('border', '1px solid #ddd')
+            .style('border-radius', '4px')
+            .style('box-shadow', '0 2px 4px rgba(0,0,0,0.1)');
+        
+        function showWordInfo(d) {
+            const sentimentClass = d.sentiment >= 60 ? 'text-success' :
+                                 d.sentiment <= 40 ? 'text-danger' : 'text-secondary';
+            
+            tooltip.html(`
+                <strong>${d.text}</strong><br>
+                Fréquence: ${d.size}<br>
+                Sentiment: <span class="${sentimentClass}">${d.sentiment.toFixed(1)}</span>
+            `)
+            .style('visibility', 'visible')
+            .style('left', (d3.event.pageX + 10) + 'px')
+            .style('top', (d3.event.pageY - 10) + 'px');
+        }
+        
+        function hideWordInfo() {
+            tooltip.style('visibility', 'hidden');
+        }
+    }
+    
+    // Appeler les fonctions après le chargement de la page
+    document.addEventListener('DOMContentLoaded', function() {
+        createHeatmap();
+        createWordCloud();
+        
+        // Recréer le nuage de mots quand la fenêtre est redimensionnée
+        window.addEventListener('resize', _.debounce(createWordCloud, 250));
     });
-    {% endfor %}
 </script>
-{% endblock %} 
+{% endblock %}

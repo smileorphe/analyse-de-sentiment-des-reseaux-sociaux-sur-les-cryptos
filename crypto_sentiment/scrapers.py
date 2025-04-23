@@ -34,22 +34,34 @@ logger = logging.getLogger(__name__)
 class SentimentAnalyzer:
     def __init__(self):
         self.sia = SentimentIntensityAnalyzer()
-        self.stop_words = set(stopwords.words('english'))
+        # Utiliser les stop words français
+        self.stop_words = set(stopwords.words('french'))
         
     def analyze_text(self, text):
         """Analyse le sentiment d'un texte et retourne un score entre 0 et 100"""
         # Nettoyer le texte
-        tokens = word_tokenize(text.lower())
+        tokens = word_tokenize(text.lower(), language='french')
         filtered_tokens = [word for word in tokens if word.isalnum() and word not in self.stop_words]
         cleaned_text = ' '.join(filtered_tokens)
         
-        # Analyser le sentiment
+        # Analyser le sentiment avec adaptation pour le français
         sentiment_scores = self.sia.polarity_scores(cleaned_text)
         
-        # Convertir le score compound (-1 à 1) en score 0-100
-        score = (sentiment_scores['compound'] + 1) * 50
+        # Ajuster le score pour le français
+        # On donne plus de poids aux mots positifs/négatifs français courants
+        french_pos = {'bien', 'super', 'génial', 'excellent', 'parfait', 'incroyable', 'formidable'}
+        french_neg = {'mauvais', 'nul', 'terrible', 'horrible', 'catastrophe', 'pire', 'médiocre'}
         
-        return score
+        words = set(cleaned_text.split())
+        pos_count = sum(1 for word in words if word in french_pos)
+        neg_count = sum(1 for word in words if word in french_neg)
+        
+        # Ajuster le score en fonction des mots français
+        adjustment = (pos_count - neg_count) * 0.2
+        score = (sentiment_scores['compound'] + 1 + adjustment) * 50
+        
+        # Garder le score entre 0 et 100
+        return max(0, min(100, score))
 
 class SocialMediaScraper:
     def __init__(self):
@@ -63,7 +75,8 @@ class SocialMediaScraper:
     def scrape_reddit(self, crypto_symbol, subreddit='cryptocurrency'):
         """Scrape les posts Reddit concernant une cryptomonnaie"""
         try:
-            url = f'https://www.reddit.com/r/{subreddit}/search.json?q={crypto_symbol}&restrict_sr=1&sort=new'
+            # Ajouter le filtre de langue française
+            url = f'https://www.reddit.com/r/{subreddit}/search.json?q={crypto_symbol}+language%3Afr&restrict_sr=1&sort=new'
             response = self.session.get(url)
             if response.status_code == 200:
                 data = response.json()
@@ -96,44 +109,61 @@ class SocialMediaScraper:
     def scrape_4chan(self, crypto_symbol, board='biz'):
         """Scrape les threads 4chan concernant une cryptomonnaie"""
         try:
-            url = f'https://boards.4channel.org/{board}/catalog'
+            # Utiliser l'API JSON de 4chan au lieu du HTML
+            url = f'https://a.4cdn.org/{board}/catalog.json'
             response = self.session.get(url)
             if response.status_code == 200:
-                soup = BeautifulSoup(response.text, 'html.parser')
-                threads = soup.find_all('div', class_='thread')
+                threads_data = response.json()
                 
-                for thread in threads:
-                    if crypto_symbol.lower() in thread.text.lower():
-                        thread_id = thread.get('id')
-                        thread_url = f'https://boards.4channel.org/{board}/thread/{thread_id}'
-                        
-                        # Récupérer les posts du thread
-                        thread_response = self.session.get(thread_url)
-                        if thread_response.status_code == 200:
-                            thread_soup = BeautifulSoup(thread_response.text, 'html.parser')
-                            posts = thread_soup.find_all('div', class_='post')
+                for page in threads_data:
+                    for thread in page.get('threads', []):
+                        # Vérifier si le thread parle de la crypto
+                        thread_text = f"{thread.get('sub', '')} {thread.get('com', '')}"
+                        if crypto_symbol.lower() in thread_text.lower():
+                            thread_id = thread.get('no')
                             
-                            for post in posts:
-                                content = post.find('div', class_='message').text
-                                created_at = timezone.make_aware(
-                                    datetime.fromtimestamp(int(post.get('data-time', 0))),
-                                    timezone.get_current_timezone()
-                                )
+                            # Récupérer les posts du thread via l'API
+                            thread_url = f'https://a.4cdn.org/{board}/thread/{thread_id}.json'
+                            thread_response = self.session.get(thread_url)
+                            
+                            if thread_response.status_code == 200:
+                                thread_data = thread_response.json()
                                 
-                                # Analyser le sentiment
-                                sentiment_score = self.sentiment_analyzer.analyze_text(content)
-                                
-                                SocialMediaPost.objects.update_or_create(
-                                    post_id=f"4chan_{thread_id}_{post.get('data-no')}",
-                                    defaults={
-                                        'title': f"4chan Thread {thread_id}",
-                                        'content': content,
-                                        'platform': '4CHAN',
-                                        'created_at': created_at,
-                                        'sentiment_score': sentiment_score,
-                                        'cryptocurrency': Cryptocurrency.objects.get(symbol=crypto_symbol)
-                                    }
-                                )
+                                for post in thread_data.get('posts', []):
+                                    content = post.get('com', '')
+                                    if not content:  # Ignorer les posts sans contenu
+                                        continue
+                                        
+                                    # Nettoyer le HTML du contenu
+                                    content = BeautifulSoup(content, 'html.parser').get_text()
+                                    
+                                    # Vérifier si le texte semble être en français
+                                    if not any(word in content.lower() for word in ['le', 'la', 'les', 'un', 'une', 'des', 'est', 'sont']):
+                                        continue
+                                    
+                                    created_at = timezone.make_aware(
+                                        datetime.fromtimestamp(post.get('time', 0)),
+                                        timezone.get_current_timezone()
+                                    )
+                                    
+                                    # Analyser le sentiment
+                                    sentiment_score = self.sentiment_analyzer.analyze_text(content)
+                                    
+                                    # Créer ou mettre à jour le post
+                                    SocialMediaPost.objects.update_or_create(
+                                        post_id=f"4chan_{thread_id}_{post.get('no')}",
+                                        defaults={
+                                            'content': content,
+                                            'platform': '4CHAN',
+                                            'created_at': created_at,
+                                            'sentiment_score': sentiment_score,
+                                            'cryptocurrency': Cryptocurrency.objects.get(symbol=crypto_symbol)
+                                        }
+                                    )
+                            
+                            # Attendre un peu pour éviter d'être bloqué
+                            time.sleep(1)
+                            
         except Exception as e:
             logger.error(f"Erreur lors du scraping 4chan pour {crypto_symbol}: {str(e)}")
 
@@ -147,21 +177,137 @@ class SocialMediaScraper:
         except Exception as e:
             logger.error(f"Erreur lors du scraping Telegram pour {crypto_symbol}: {str(e)}")
 
+    def scrape_cryptofr(self, crypto_symbol):
+        """Scrape les posts du forum CryptoFR"""
+        try:
+            # URL de base du forum CryptoFR
+            base_url = 'https://cryptofr.com'
+            search_url = f'{base_url}/search/search'
+            
+            # Paramètres de recherche
+            params = {
+                'keywords': crypto_symbol,
+                'title_only': 1,
+                'order': 'date',
+                'direction': 'desc'
+            }
+            
+            response = self.session.get(search_url, params=params)
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.text, 'html.parser')
+                topics = soup.find_all('div', class_='structItem')
+                
+                for topic in topics:
+                    title = topic.find('div', class_='structItem-title').text.strip()
+                    content_preview = topic.find('div', class_='structItem-snippet').text.strip()
+                    topic_id = topic.get('data-content')
+                    
+                    # Récupérer la date
+                    date_element = topic.find('time')
+                    if date_element and date_element.get('datetime'):
+                        created_at = timezone.make_aware(
+                            datetime.fromisoformat(date_element['datetime'].replace('Z', '+00:00')),
+                            timezone.get_current_timezone()
+                        )
+                    else:
+                        created_at = timezone.now()
+                    
+                    # Analyser le sentiment
+                    content = f"{title}\n\n{content_preview}"
+                    sentiment_score = self.sentiment_analyzer.analyze_text(content)
+                    
+                    # Créer ou mettre à jour le post
+                    SocialMediaPost.objects.update_or_create(
+                        post_id=f"cryptofr_{topic_id}",
+                        defaults={
+                            'content': content,
+                            'platform': 'CRYPTOFR',
+                            'created_at': created_at,
+                            'sentiment_score': sentiment_score,
+                            'cryptocurrency': Cryptocurrency.objects.get(symbol=crypto_symbol)
+                        }
+                    )
+                    
+                    # Attendre un peu pour éviter d'être bloqué
+                    time.sleep(0.5)
+                    
+        except Exception as e:
+            logger.error(f"Erreur lors du scraping CryptoFR pour {crypto_symbol}: {str(e)}")
+            
+    def scrape_jvcom(self, crypto_symbol):
+        """Scrape les posts du forum JVC Cryptomonnaies"""
+        try:
+            # URL de base du forum JVC
+            forum_url = 'https://www.jeuxvideo.com/forums/42-3011927-0-1-0-1-0-crypto-monnaies.htm'
+            
+            response = self.session.get(forum_url)
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.text, 'html.parser')
+                topics = soup.find_all('li', class_='topic')
+                
+                for topic in topics:
+                    if crypto_symbol.lower() in topic.text.lower():
+                        title = topic.find('a', class_='topic-title').text.strip()
+                        topic_id = topic.get('data-id')
+                        topic_url = f"https://www.jeuxvideo.com/forums/message/{topic_id}"
+                        
+                        # Récupérer le contenu du topic
+                        topic_response = self.session.get(topic_url)
+                        if topic_response.status_code == 200:
+                            topic_soup = BeautifulSoup(topic_response.text, 'html.parser')
+                            first_post = topic_soup.find('div', class_='txt-msg')
+                            if first_post:
+                                content = f"{title}\n\n{first_post.text.strip()}"
+                                
+                                # Récupérer la date
+                                date_element = topic.find('span', class_='topic-date')
+                                if date_element:
+                                    date_str = date_element['title']
+                                    try:
+                                        created_at = timezone.make_aware(
+                                            datetime.strptime(date_str, '%d/%m/%Y %H:%M:%S'),
+                                            timezone.get_current_timezone()
+                                        )
+                                    except:
+                                        created_at = timezone.now()
+                                else:
+                                    created_at = timezone.now()
+                                
+                                # Analyser le sentiment
+                                sentiment_score = self.sentiment_analyzer.analyze_text(content)
+                                
+                                # Créer ou mettre à jour le post
+                                SocialMediaPost.objects.update_or_create(
+                                    post_id=f"jvcom_{topic_id}",
+                                    defaults={
+                                        'content': content,
+                                        'platform': 'JVCOM',
+                                        'created_at': created_at,
+                                        'sentiment_score': sentiment_score,
+                                        'cryptocurrency': Cryptocurrency.objects.get(symbol=crypto_symbol)
+                                    }
+                                )
+                        
+                        # Attendre un peu pour éviter d'être bloqué
+                        time.sleep(1)
+                    
+        except Exception as e:
+            logger.error(f"Erreur lors du scraping JVC pour {crypto_symbol}: {str(e)}")
+
     def run_scraping(self):
         """Exécute le scraping pour toutes les cryptomonnaies"""
         cryptocurrencies = Cryptocurrency.objects.all()
+        
         for crypto in cryptocurrencies:
             logger.info(f"Début du scraping pour {crypto.symbol}")
             
-            # Reddit
+            # Scraping Reddit
             self.scrape_reddit(crypto.symbol)
-            time.sleep(2)  # Pause pour éviter d'être bloqué
             
-            # 4chan
-            self.scrape_4chan(crypto.symbol)
-            time.sleep(2)
+            # Scraping CryptoFR
+            self.scrape_cryptofr(crypto.symbol)
             
-            # Telegram (à implémenter selon vos besoins)
-            # self.scrape_telegram(crypto.symbol, 'channel_name')
+            # Scraping JVC
+            self.scrape_jvcom(crypto.symbol)
             
-            logger.info(f"Fin du scraping pour {crypto.symbol}") 
+            logger.info(f"Fin du scraping pour {crypto.symbol}")
